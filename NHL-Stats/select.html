@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div id="select_div">
+  <h2>Select Player</h2>
+  <form id="form" action="graph_page.html">
+  <select name="select_teams" id="teams">
+    <option value="-1"></option>
+  </select>
+  <select name="select_players" id="players">
+    <option value="-1"></option>
+  </select>
+  <br><br>
+  <input type="submit" id="submit" disabled></input>
+  </form>
+</div>
+
+<script>
+document.getElementById("teams").addEventListener("change", getPlayers);
+document.getElementById("players").addEventListener("change", checkSubmit);
+getTeams();
+
+function getTeams() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(this.responseText);
+      var teams = response.teams;
+      var teams_dict = {};
+      for (team of teams){
+        teams_dict[team.name] = team.id;
+      }
+      loadTeamsMenu(teams_dict);
+
+
+    }
+  };
+  xhttp.open("GET", "https://statsapi.web.nhl.com/api/v1/teams", true);
+  xhttp.send();
+}
+
+function loadTeamsMenu(teams_dict){
+  for(var team_name in teams_dict){
+    var team_id = teams_dict[team_name]
+    var option = document.createElement("option");
+    option.setAttribute("value", team_id);
+    var name = document.createTextNode(team_name);
+    option.appendChild(name);
+    document.getElementById("teams").appendChild(option);
+  }
+}
+
+function getPlayers() {
+  var team_id = document.getElementById("teams").value;
+  if (team_id < 0){
+    return;
+  }
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(this.responseText);
+      var roster_array = response.teams[0].roster.roster;
+      var players_dict = {};
+      for (player of roster_array){
+        players_dict[player.person.fullName] = player.person.id;
+      }
+      loadPlayersMenu(players_dict);
+    }
+  };
+  xhttp.open("GET", "https://statsapi.web.nhl.com/api/v1/teams" + "/" + team_id.toString() + "?expand=team.roster", true);
+  xhttp.send();
+}
+
+function loadPlayersMenu(players_dict){
+  resetPlayerMenu()
+  for(var player_name in players_dict){
+    var player_id = players_dict[player_name]
+    var option = document.createElement("option");
+    option.setAttribute("value", player_id);
+    var name = document.createTextNode(player_name);
+    option.appendChild(name);
+    document.getElementById("players").appendChild(option);
+  }
+  checkSubmit()
+}
+
+function resetPlayerMenu(){
+  document.getElementById("players").options.length = 0;
+  var option = document.createElement("option");
+  option.setAttribute("value", -1);
+  var name = document.createTextNode("");
+  option.appendChild(name);
+  document.getElementById("players").appendChild(option);
+}
+
+function checkSubmit(){
+  var team_id = document.getElementById("teams").value;
+  var player_id = document.getElementById("players").value;
+  if(team_id < 0 || player_id < 0){
+    document.getElementById("submit").disabled = true;
+  } else{
+    document.getElementById("submit").disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
